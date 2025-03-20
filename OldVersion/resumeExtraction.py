@@ -6,34 +6,36 @@ def extract_resume_info(text):
     """
     Extracts structured information (name, email, phone, skills, work experience) from the given resume text using an LLM.
     """
-    model = "gemma:2b"  
+    model = "gemma3:4b"  
     prompt = f"""
-    Extract the following information from the given resume text:
+    Extract the following details from the given resume:
     - Name
     - Email
     - Phone Number
     - Skills
-    - Work Experiences: Extract all work experiences. Each experience should be a dictionary with the following keys: company_name, job_title, start_date, end_date, and a description of achievements/tasks. If the end date is ongoing or not explicitly mentioned, use "Present".
+    - Work Experience (company name, job title, start date, end date, description)
     - Projects
-    - Educational Qualifications: Extract all educational qualifications. Each qualification should be a dictionary with the following keys: degree, institution, end_year and start_year  (if mentioned).
+    - Education (degree, institution, start_year, end_year)
     - Certifications
     - Hobbies
     - Languages
 
-    Return the output **strictly as a valid JSON object** with no extra text.
+    Return output as a **valid JSON object**.
 
     Resume Text:
-    {text}  
-   
+    {text}
     """
 
     response = ollama.chat(
-        model=model,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    model=model,
+    messages=[{"role": "user", "content": prompt}],
+    stream=True  # Enable streaming
+)
 
-    raw_content = response.message.content  
-    print("Raw LLM Response:", raw_content)  # Debugging print
+    # Process response in chunks
+    raw_content = ""
+    for chunk in response:
+        raw_content += chunk.message.content
 
     # ✅ Step 1: Remove unwanted formatting (like markdown backticks)
     cleaned_json = re.sub(r"```json|```", "", raw_content).strip()
